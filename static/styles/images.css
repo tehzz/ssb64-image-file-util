@@ -1,0 +1,145 @@
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html, body{
+	margin:0;
+	padding:0;
+}
+
+.hidden{
+	display: none;
+}
+
+.top{
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	height: 4rem;
+	position: relative;
+	z-index: 10;
+	
+	background-color: #ddd;
+	padding: 0em 0em 0.0em 0.5em;
+	box-shadow: 0px 0px 0.5em 0px #000;
+}
+
+#upload-first{
+	display: flex;
+	flex: 1;
+	height: 100%;
+	
+	align-items: center;
+	justify-content: space-around;
+}	
+
+#file_uploader{
+	height: auto;
+	flex: 1;
+}
+
+#message {
+	display: inline-block;
+	flex: 3;
+	height: 100%;
+	text-align: center;
+	line-height: 4em;
+	border-radius: 0.2em;
+	background-color: #eee;
+	box-shadow: 0px 0px 0.2em #666;
+	box-sizing: border-box;
+}
+
+#message.error{
+	color: red;
+	background-color: #fee;
+}
+
+#controls{
+	display: none;
+}
+
+.container{
+	display: flex;
+	overflow: hidden;
+	height: 100vh;
+	margin: -4em 0em 0em 0em;
+	padding: 4em 0em 0em 0em;
+	position: relative;
+	width: 100%;
+	backface-visibility: hidden;
+}
+
+.left, .middle, .right{
+	overflow: auto;
+	height: auto;
+	padding: 0.5rem;
+}
+
+.left{
+	width: 20%;
+	max-width: 12.5rem;
+	min-width: 8rem;
+	background-color: #eee;
+	border-left: solid 1px #aaa;
+}
+
+ul.left{
+	margin: 0;
+	padding: 0.5rem 0rem 1rem 0rem;
+	list-style-type: none;
+	color: #333;
+	font-size: 0.875em;
+	font-family: 'Open Sans', 'Helvetica', sans-serif;
+}
+
+ul.left > li{
+	padding: 0.4rem 2rem;
+	border-bottom: 1px solid #bbb;
+	transition: font-size 0.3s ease, background-color 0.15s ease, text-align 0.5s ease;
+}
+
+ul.left > li:last-child{
+	border-bottom: none;
+}
+
+ul.left > li:hover{
+	cursor: pointer;
+	background-color: #bbb;
+	color: #000;
+	text-align: center;
+	font-size: 1.1em;
+}
+
+li.selected {
+	background-color: #c38888;
+	color: #fff;
+	text-align: center;
+	font-size: 1.1em;
+}
+
+li.selected:hover {
+	background-color: #f2b4b4 !important;
+	color: #000 !important;
+}
+
+.right{
+	flex: 1;
+	background-color: #eee;
+	padding: 0.5rem 1rem 1rem 0.5rem;
+}
+
+
+
+.hex {
+	word-spacing: 0.4em;
+	font-family: monospace;
+	display: inline-block;
+	padding: 0.5rem 0.8rem;
+	border: 1px solid #222;
+	background-color: #fff;
+}
+
