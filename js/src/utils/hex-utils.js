@@ -35,7 +35,7 @@ function format( bufferOrView, lineLength, group ) {
 								new Uint8Array( bufferOrView );
 	let output;
 
-	output = uint8.reduce( (output, uint8, i) =>{
+	output = uint8.reduce( (output, uint8, i) => {
 		let byte = uint8.toString(16).toUpperCase()
 
 		while ( byte.length < 2 ){
