@@ -70,118 +70,75 @@ N64Image.prototype.getProcessedBuffer = function(){
 	if ( typeof this.processedBuffer !== "undefined" ) return this.processedBuffer
 
 	let {height, width, bpp, swapWords: swap, chunks} = this,
-		//ceil(pixels * bits / pixel * 1 byte/8bits) for size for 4 bit images...
+		// ceil(pixels * bits / pixel * 1 byte/8bits) for size for 4 bit images...
 		outputBuffer = new ArrayBuffer(Math.ceil(height * width * bpp / 8)),
-		outputDV	= new DataView(outputBuffer),
 		outputPos	= 0,
 		chunkOldHeight = this.footer.chunkOldHeight,
-		chunkNewHeight = this.footer.chunkNewHeight;
+		chunkNewHeight = this.footer.chunkNewHeight,
+		expandedNibble = false;
 
-	//Need to re-think this whole function in terms of going from bytes to pixels
+	// Need to re-think this whole function in terms of going from bytes to pixels
+	outputBuffer = chunks.reduce( function( outputBuffer, chunk, i ){
+		const {finalWidth: fWidth, rowWidth: cWidth, height: cHeight} = chunk;
 
-	chunks.reduce( function( outputBuffer, chunk, i ){
-		let {finalWidth: fWidth, rowWidth: cWidth, height: cHeight} = chunk,
-			chunkRawDV = chunk.getData().dv,
-			chunkBuffer = chunkRawDV.buffer.slice( chunkRawDV.byteOffset, chunkRawDV.byteOffset + chunkRawDV.byteLength ),
-			chunkDV = new DataView(chunkBuffer),
-			chunkUpdatedHeight = cHeight,
-			halfByte = false;
+		let chunkRawDV = chunk.getData().dv,
+				chunkBuffer = chunkRawDV.buffer.slice( chunkRawDV.byteOffset, chunkRawDV.byteOffset + chunkRawDV.byteLength ),
+				chunkDV = new DataView(chunkBuffer),
+				chunkUpdatedHeight = cHeight,
+				pseudoBPP = bpp;
 
-		//swap words before removing any padding or extra rows
+		// swap words before removing any padding or extra rows
 		if ( swap ) swapWords( cHeight, cWidth, bpp, chunkDV )
 
-		//remove extra rows if specified in the footer
+		// remove extra rows if specified in the footer
 		if( cHeight === chunkOldHeight && chunkNewHeight < chunkOldHeight ) {
-			//calc the new byte size of the reduced chunk.
-			//Round up an extra byte in case of an odd number of pixels in a 4bit image chunk
+			// calc the new size in bytes of the reduced chunk.
+			// Round up an extra byte in case of an odd number of pixels in a 4bit image chunk
 			const New_Size = Math.ceil(chunkNewHeight * cWidth * bpp / 8)
-			//chop off rows if we have a replacement height in the footer.
+			// chop off rows if we have a replacement height in the footer.
 			chunkBuffer = chunkBuffer.slice( 0, New_Size )
 			chunkDV = new DataView(chunkBuffer)
-			//update our height
+			// update our height
 			chunkUpdatedHeight = chunkNewHeight
 		}
 
-		//remove padding
-		if( cWidth !== fWidth ){
-			if(bpp === 4){
-				console.log('4 bpp; running specialized sub byte code')
+		// if 4 bit, expand so that each pixel takes up 1 byte
+		if ( bpp === 4 ){
+			console.log('4 bpp: Expanding 4-bit pixels to 8-bit size')
 
-				const No_Padding_Size = chunkUpdatedHeight * fWidth * bpp,		//in terms of bits
-							C_Byte_Width = cWidth * bpp / 8, 	//this shoud be a whole number.... bytes per row in with padding
-							F_Bit_Width = fWidth * bpp,
-							F_Byte_Width = F_Bit_Width >>> 3, 	//Math.floor(F_Bit_Width / 8)
-							tempBuffer = new ArrayBuffer(Math.ceil(No_Padding_Size / 8)),
-							//can I just use a Uint8Array or Uint8ClampedArray?
-							tempDV = new DataView(tempBuffer);
+			const expanded = subByte.expand( chunkBuffer, bpp, cWidth*chunkUpdatedHeight )
+			chunkBuffer = expanded.buffer
+			chunkDV 		= expanded.dv;
 
-				let h = 0,
-						i = 0;
+			// resize output buffer to handle an 8bit image
+			pseudoBPP = 8
+			if ( !expandedNibble ) outputBuffer = new ArrayBuffer(height * width)
 
-				//for each row (in terms of number of rows aka height)
-				for ( h = 0; h < chunkUpdatedHeight; h++ ) {
-					//for each pixel in unpadded output in terms of bits
-					for ( i = 0; i < F_Bit_Width; i += bpp ){
-									//put i in terms of bytes and half bytes for this row
-						const Row_Byte = i >>> 3,		//this will round down to get the full byte
-									//byte offset within padded chunk
-									c_byteOffset = Row_Byte + (h * C_Byte_Width),
-									//high 4 bits if i is divisble by 8, get lower 4 bits otherwise
-									c_halfMask = i % 8 === 0 ? 0xF0 : 0x0F,
-									//get variable shift length to convert 8 bit chunk data to 4 bit int
-									c_srlv = i % 8 === 0 ? 4 : 0,
-									//bit offset within unpadded chunk buffer
-									t_bitOffset = i + (h * F_Bit_Width),
-									//byte offset within unpadded chunk buffer
-									t_byteOffset = t_bitOffset >>> 3,
-									//get variable shift for ORing
-									t_sllv = t_bitOffset % 8 === 0 ? 4 : 0
-
-						//get current byte from padded chunk data
-						let chunkByte = chunkDV.getUint8(c_byteOffset),
-						//get byte from unpadded output buffer
-								tempByte = tempDV.getUint8(t_byteOffset);
-
-						//mask
-						chunkByte &= c_halfMask
-						//shift right if needed
-						chunkByte = chunkByte >>> c_srlv
-						//shift chunkbyte to proper position for the unpadded chunk buffer
-						chunkByte = chunkByte << t_sllv
-
-						//OR the masked byte from the chunk with the byte from the output array
-						tempByte |= chunkByte
-						//store OR'd temp byte
-						tempDV.setUint8(t_byteOffset, tempByte)
-					}
-				}
-
-				//set chunk buffer to temp buffer
-				chunkBuffer = tempBuffer
-				chunkDV = new DataView(tempBuffer)
-
-			} else {
-				console.log('bpp is not 4. Running old code that works well on byte sized data')
-				//get the size of the new buffer, and convert the widths from pixels into byte sizes
-				//for the size, divide by the old width to get the chunk height * bpp / 8, then * new width
-				const New_Size = chunkBuffer.byteLength / cWidth * fWidth,
-					  F_Bit_Width = fWidth * bpp / 8,
-					  C_Bit_Width = cWidth * bpp / 8,	//need to check if not even due to 4 bit images..
-					  C_Calc_Height = chunkBuffer.byteLength / cWidth / bpp * 8
-
-				let tempBuffer = new ArrayBuffer(New_Size)
-
-				for ( let i = 0; i < C_Calc_Height; i++ ) {
-					memcpy( tempBuffer, i*F_Bit_Width, chunkBuffer, i*C_Bit_Width, F_Bit_Width )
-				}
-				//set the temp buffers to the chunk buffers
-				chunkBuffer = tempBuffer
-				chunkDV = new DataView(tempBuffer)
-			}
+			// indicate that the bpp has been expanded, so it can be compressed later
+			expandedNibble = true
 		}
 
-		//this needs to be made aware of sub-byte buffer sizes....
-		//file 16 image 3 has this problem
+		// remove padding
+		if ( cWidth !== fWidth ) {
+			// since every pixel is now 1 byte or greater,
+			// there isn't a need for sub-byte maskes, etc.
+			const New_Size = chunkBuffer.byteLength / cWidth * fWidth,
+						F_Byte_Width = fWidth * pseudoBPP / 8,
+						C_Byte_Width = cWidth * pseudoBPP / 8;
+
+			let tempBuffer = new ArrayBuffer(New_Size)
+
+			// copy each row minus the padding
+			for ( let i = 0; i < chunkUpdatedHeight; i++ ) {
+				memcpy( tempBuffer, i*F_Byte_Width, chunkBuffer, i*C_Byte_Width, F_Byte_Width )
+			}
+			//set the temp buffers to the chunk buffers
+			chunkBuffer = tempBuffer
+			chunkDV = new DataView(tempBuffer)
+		}
+
+		// append current chunk to previous chunk
+		// check file 16 image 3 to see if odd number sized 4bit chunks combine correctly
 		memcpy( outputBuffer, outputPos, chunkBuffer, 0, chunkBuffer.byteLength )
 
 		console.log(`Added data to 0x${outputPos.toString(16).toUpperCase()} of output buffer`)
@@ -195,9 +152,15 @@ N64Image.prototype.getProcessedBuffer = function(){
 
 	}, outputBuffer)
 
+	// if a 4 bit image was expaned to 8 bits, compress
+	if ( expandedNibble ) {
+		const compressed = subByte.compress( outputBuffer, bpp, height * width )
+		outputBuffer	= compressed.buffer
+	}
+
 	this.processedBuffer = {
 		buffer: outputBuffer,
-		dv: outputDV
+		dv: new DataView(outputBuffer)
 	}
 
 	return this.processedBuffer

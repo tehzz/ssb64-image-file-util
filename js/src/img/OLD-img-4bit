@@ -1,0 +1,59 @@
+//old remove padding for 4 bit code --> hide
+/*
+if(bpp === 4){
+  console.log('4 bpp; running specialized sub byte code')
+
+  const No_Padding_Size = chunkUpdatedHeight * fWidth * bpp,		//in terms of bits
+        C_Byte_Width = cWidth * bpp / 8, 	//this shoud be a whole number.... bytes per row in with padding
+        F_Bit_Width = fWidth * bpp,
+        F_Byte_Width = F_Bit_Width >>> 3, 	//Math.floor(F_Bit_Width / 8)
+        tempBuffer = new ArrayBuffer(Math.ceil(No_Padding_Size / 8)),
+        //can I just use a Uint8Array or Uint8ClampedArray?
+        tempDV = new DataView(tempBuffer);
+
+  let h = 0,
+      i = 0;
+
+  //for each row (in terms of number of rows aka height)
+  for ( h = 0; h < chunkUpdatedHeight; h++ ) {
+    //for each pixel in unpadded output in terms of bits
+    for ( i = 0; i < F_Bit_Width; i += bpp ){
+            //put i in terms of bytes and half bytes for this row
+      const Row_Byte = i >>> 3,		//this will round down to get the full byte
+            //byte offset within padded chunk
+            c_byteOffset = Row_Byte + (h * C_Byte_Width),
+            //high 4 bits if i is divisble by 8, get lower 4 bits otherwise
+            c_halfMask = i % 8 === 0 ? 0xF0 : 0x0F,
+            //get variable shift length to convert 8 bit chunk data to 4 bit int
+            c_srlv = i % 8 === 0 ? 4 : 0,
+            //bit offset within unpadded chunk buffer
+            t_bitOffset = i + (h * F_Bit_Width),
+            //byte offset within unpadded chunk buffer
+            t_byteOffset = t_bitOffset >>> 3,
+            //get variable shift for ORing
+            t_sllv = t_bitOffset % 8 === 0 ? 4 : 0
+
+      //get current byte from padded chunk data
+      let chunkByte = chunkDV.getUint8(c_byteOffset),
+      //get byte from unpadded output buffer
+          tempByte = tempDV.getUint8(t_byteOffset);
+
+      //mask
+      chunkByte &= c_halfMask
+      //shift right if needed
+      chunkByte = chunkByte >>> c_srlv
+      //shift chunkbyte to proper position for the unpadded chunk buffer
+      chunkByte = chunkByte << t_sllv
+
+      //OR the masked byte from the chunk with the byte from the output array
+      tempByte |= chunkByte
+      //store OR'd temp byte
+      tempDV.setUint8(t_byteOffset, tempByte)
+    }
+  }
+
+  //set chunk buffer to temp buffer
+  chunkBuffer = tempBuffer
+  chunkDV = new DataView(tempBuffer)
+
+}*/

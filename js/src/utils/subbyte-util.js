@@ -37,12 +37,12 @@ function expand( src, bitSize, length ) {
 
   return {
     buffer,
-    unit8,
+    uint8,
     dv: new DataView(buffer)
   }
 }
 
-function contract( src, bitSize, length ) {
+function compress( src, bitSize, length ) {
   const buffer = new ArrayBuffer( Math.ceil(length * bitSize / 8) ),
         desUint8 = new Uint8Array(buffer),
         srcUint8 = new Uint8Array(src.buffer ? src.buffer : src);
@@ -52,7 +52,8 @@ function contract( src, bitSize, length ) {
   // double check length
   length = length || src.byteLength
 
-  // i should be in terms of bytes--the number of expanded sub-byte units
+  // i should be in terms of bytes,
+  // which is equal the number of expanded sub-byte nibbles to be compressed
   for ( i = 0; i < length; i++ ) {
     const dest_bit_offset = i * bitSize,
           dest_byte_offset = dest_bit_offset >>> 3,    // floor(bits/8)
@@ -61,18 +62,18 @@ function contract( src, bitSize, length ) {
     let nibble = srcUint8[i]
     //shift nibble to correct position
     nibble = nibble << shift
-    // and and store nibble into output
-    desUint8[dest_byte_offset] &= nibble
+    // OR nibble with soted data to store nibble into output
+    desUint8[dest_byte_offset] |= nibble
   }
 
   return {
     buffer,
-    unit8: desUint8,
+    uint8: desUint8,
     dv: new DataView(buffer)
   }
 }
 
 module.exports = {
   expand,
-  contract
+  compress
 }
