@@ -1,7 +1,7 @@
-# Node Modules #
-/node_modules/
-# The compiled app.js#
-/static/js/app.js
+# Ignore Anything Not in Static#
+*
+/*/
+!/static/
 
 # Compiled source #
 ###################
