@@ -79,7 +79,8 @@ window.onload = function(){
 			const newCanvas = document.createElement('canvas'),
 						newCtx = newCanvas.getContext('2d'),
 						container = document.getElementById('canvas_container');
-
+			// give canvas an id:
+			newCanvas.id = "imgCanvas";
 			//set h/w of new canvas
 			newCanvas.height = img.height
 			newCanvas.width	 = img.width;
@@ -98,21 +99,51 @@ window.onload = function(){
 
 			footP.textContent = "Footer:"
 
+			//download link
+			const downA = document.createElement('a')
+						downA.id = "imageDownload"
+						downA.textContent = `Download ${target.textContent}`
+				downA.addEventListener('click', function(e){
+					console.log(e)
+					this.href = newCanvas.toDataURL('image/png')
+					this.download = `${target.textContent.replace(" ","_")}.png`;
+				}, false)
+
+			// image info
+			const imgInfo = document.createElement('table')
+						imgInfo.classList.add('image-info')
+						imgInfo.innerHTML = `<tr>
+						<td>Width</td> <td>${img.width} pixels</td>
+					</tr>
+					<tr>
+						<td>Height</td> <td>${img.height} pixels</td>
+					</tr>
+					<tr>
+						<td>Format</td> <td>${img.format}</td>
+					</tr>
+					<tr>
+						<td>Bit-Depth</td> <td>${img.bpp} bpp</td>
+					</tr>`;
+
 			//clear
 			container.innerHTML = '';
 
 			//put canvas on screen
 			container.appendChild(newCanvas)
+			// download image link
+			container.appendChild(downA)
+			//image info table
+			container.appendChild(imgInfo)
 			//put footer on screen
 			container.appendChild(footP)
 			container.appendChild(footerHex)
 
-			let bufferDiv = document.createElement('div');
+			/*let bufferDiv = document.createElement('div');
 				bufferDiv.classList.add('hex')
 				bufferDiv.style.display = 'table'
 
 			bufferDiv.innerHTML = app.hex.format(img.getProcessedBuffer().dv, 4)
-			container.appendChild(bufferDiv)
+			container.appendChild(bufferDiv)*/
 
 			console.log('Processed N64 Buffer', new Uint8Array(img.getProcessedBuffer().buffer))
 			console.log('Converted Buffer',img.getRGBABuffer())
