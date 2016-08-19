@@ -7,42 +7,14 @@ var app = (function(app){
 	app.activeFile = null;
 	app.activeImg = null; 		//will we need this...
 
-	app.logMessage = function(err, msg){
-		let display = document.getElementById('message')
-
-			display.textContent = msg
-			display.classList.toggle("error",err)
-	}
-
-	app.logError = function(str){ this.logMessage.call(this, true, str) }
-
-	app.renderImgList = function( Resource ){
-		let imgs = Resource.images,
-			ul = document.getElementById("image_list"),
-			frag = document.createDocumentFragment(),
-			imgCount = 0;
-
-		ul.innerHTML = "";
-		imgs.forEach(function( val, key ){
-			let li = document.createElement('li');
-
-			li.textContent = `Image ${++imgCount}`
-			li.setAttribute('node',key)
-
-			frag.appendChild(li)
-		})
-
-		ul.appendChild(frag)
-
-		return Resource
-
-	}
-
 	app.checkTable = require('./src/check-filetable.js')
 	app.uploadFile = require('./src/upload-res-file.js')
 	app.parseRes = require('./src/parse-resource.js')
 	//switch to an img-util.js that has everthing... add/convert/find
 	app.img = require('./src/img/img-utils.js')
+	app.log = require('./src/ui/log.js')
+	app.imgList = require('./src/ui/image-list.js')
+	app.hex = require('./src/utils/hex-utils.js')
 
 	//app.writeToResouce
 	//app.download(ModifiedResource|Image Atlas)
@@ -51,41 +23,6 @@ var app = (function(app){
 
 })(app || {})
 
-
-function formatHexData( bufferOrView, lineLength, group ) {
-	const LEN			= bufferOrView.byteLength,
-		  GROUP 		= group || 4,				//number of bytes between spaces
-		  GROUP_SPACE 	= GROUP - 1,
-		  LINE_LENGTH 	= ( lineLength || 4 ) * GROUP,		//number of groups of bytes per line
-		  LINE_BREAK 	= LINE_LENGTH - 1,
-		  uint8 		= bufferOrView.buffer ?
-							new Uint8Array( bufferOrView.buffer, bufferOrView.byteOffset, bufferOrView.byteLength ) :
-							new Uint8Array( bufferOrView );
-	let output;
-
-	//console.log(`Formating Hex Data | Buffer Size : ${uint8.byteLength} ; # of Words: ${uint8.byteLength/4}`)
-
-	output = uint8.reduce( (output, uint8, i) =>{
-		let byte = uint8.toString(16).toUpperCase()
-
-		while ( byte.length < 2 ){
-			byte = "0" + byte
-		}
-
-		output += byte
-
-		if ( i % GROUP === GROUP_SPACE ) {
-			output += " "
-
-			if ( i % 16 === LINE_BREAK ) output += "<br />\n"
-		}
-
-		return output
-
-	}, "")
-
-	return output
-}
 
 window.onload = function(){
 	let fileUpload = document.getElementById('file_uploader'),
@@ -96,18 +33,18 @@ window.onload = function(){
 			fileInfo = app.checkTable(file.name);
 
 		if ( !fileInfo ){
-			app.logError("File Not Found! Upload a zoinkity-named resource file!");
+			app.log.error("File Not Found! Upload a zoinkity-named resource file!");
 			return false
 		}
 
-		app.logMessage(false, `File Found! Uploading ${file.name}:
+		app.log.message(`File Found! Uploading ${file.name}:
 						0x${file.size.toString(16).toUpperCase()} Bytes |
 						Last Modified: ${new Date(file.lastModified).toDateString()}`)
 
 		app.uploadFile(file, "readAsArrayBuffer", fileInfo)
 			.then(app.parseRes)
 			.then(app.img.find)
-			.then(app.renderImgList)
+			.then(app.imgList.render)
 			.then( (ResourceFile) => {
 				app.activeFile = ResourceFile;
 				console.log(ResourceFile)
@@ -142,7 +79,8 @@ window.onload = function(){
 			const newCanvas = document.createElement('canvas'),
 						newCtx = newCanvas.getContext('2d'),
 						container = document.getElementById('canvas_container');
-
+			// give canvas an id:
+			newCanvas.id = "imgCanvas";
 			//set h/w of new canvas
 			newCanvas.height = img.height
 			newCanvas.width	 = img.width;
@@ -157,25 +95,55 @@ window.onload = function(){
 			footerHex.classList.add('hex')
 			footerHex.style.display = 'table'
 
-			footerHex.innerHTML = 	formatHexData(img.footer.dv, 4)
+			footerHex.innerHTML = 	app.hex.format(img.footer.dv, 4)
 
 			footP.textContent = "Footer:"
+
+			//download link
+			const downA = document.createElement('a')
+						downA.id = "imageDownload"
+						downA.textContent = `Download ${target.textContent}`
+				downA.addEventListener('click', function(e){
+					console.log(e)
+					this.href = newCanvas.toDataURL('image/png')
+					this.download = `${target.textContent.replace(" ","_")}.png`;
+				}, false)
+
+			// image info
+			const imgInfo = document.createElement('table')
+						imgInfo.classList.add('image-info')
+						imgInfo.innerHTML = `<tr>
+						<td>Width</td> <td>${img.width} pixels</td>
+					</tr>
+					<tr>
+						<td>Height</td> <td>${img.height} pixels</td>
+					</tr>
+					<tr>
+						<td>Format</td> <td>${img.format}</td>
+					</tr>
+					<tr>
+						<td>Bit-Depth</td> <td>${img.bpp} bpp</td>
+					</tr>`;
 
 			//clear
 			container.innerHTML = '';
 
 			//put canvas on screen
 			container.appendChild(newCanvas)
+			// download image link
+			container.appendChild(downA)
+			//image info table
+			container.appendChild(imgInfo)
 			//put footer on screen
 			container.appendChild(footP)
 			container.appendChild(footerHex)
 
-			let bufferDiv = document.createElement('div');
+			/*let bufferDiv = document.createElement('div');
 				bufferDiv.classList.add('hex')
 				bufferDiv.style.display = 'table'
 
-			bufferDiv.innerHTML = formatHexData(img.getProcessedBuffer().dv, 4)
-			container.appendChild(bufferDiv)
+			bufferDiv.innerHTML = app.hex.format(img.getProcessedBuffer().dv, 4)
+			container.appendChild(bufferDiv)*/
 
 			console.log('Processed N64 Buffer', new Uint8Array(img.getProcessedBuffer().buffer))
 			console.log('Converted Buffer',img.getRGBABuffer())

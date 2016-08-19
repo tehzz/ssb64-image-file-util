@@ -21,7 +21,7 @@ function N64Image( Resource, imgNodeOffset, dataOffset ){
 	formatFlags = formatBitMask( this.footer.formatFlags )
 
 	this.format		= formatFlags[0]
-	this.bpp		= formatFlags[1]
+	this.bpp			= formatFlags[1]
 	this.swapWords	= formatFlags[2]
 
 	//process chunks
