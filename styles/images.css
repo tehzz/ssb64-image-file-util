@@ -59,7 +59,7 @@ html, body{
 }
 
 #controls{
-	display: none;
+	display: block;
 }
 #imgCanvas{
   display: block;
