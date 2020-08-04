@@ -60,16 +60,16 @@ function promiseOffsetInfo(form, internal) {
     return new Promise((resolve, reject) => {
         form.addEventListener('submit', e => {
             e.preventDefault()
-            const in_text = document
-                .getElementById(internal)
-                .value
-
-            if (!in_text) {
-                // todo: error type
-                reject("No Internal Pointer Offset")
-            }
-
             try {
+                const in_text = document
+                    .getElementById(internal)
+                    .value
+
+                if (!in_text) {
+                    // todo: error type
+                    reject("No Internal Pointer Offset")
+                }
+
                 console.log("running promise for pointer offset: " + in_text)
                 resolve({nodeOffset: parseInt(in_text)})
             } catch (e) {
