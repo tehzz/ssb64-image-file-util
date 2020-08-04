@@ -4,7 +4,7 @@
   "description": "View, modify, add, or delete images from an SSB64 image resource file",
   "main": "js/main.js",
   "scripts": {
-    "dev": "browserify js/main.js -o static/js/app.js -d",
+    "build": "browserify js/main.js -o static/js/app.js -d",
     "watch": "watchify js/main.js -o static/js/app.js -dv"
   },
   "author": "tehz",
