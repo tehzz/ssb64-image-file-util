@@ -10,10 +10,10 @@
   "author": "tehz",
   "license": "MIT",
   "dependencies": {
-    "promise": "^7.1.1"
+    "promise": "^8.1.0"
   },
   "devDependencies": {
-    "browserify": "^13.0.0",
+    "browserify": "^16.5.2",
     "watchify": "^3.11.1"
   }
 }
