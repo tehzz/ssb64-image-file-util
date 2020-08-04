@@ -1,7 +1,7 @@
 # Node Modules #
-/node_modules/
-# The compiled app.js#
-/static/js/app.js
+node_modules/
+# The compiled app #
+static/js/app.js
 
 # Compiled source #
 ###################
@@ -40,3 +40,4 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
